@@ -17,7 +17,7 @@ public class OrderApplication {
     @GetMapping("/api/v1/status")
     public Map<String, String> getStatus() {
         String version = System.getenv().getOrDefault("APP_VERSION", "1.0.0-local");
-        return Map.of("service", "order-service", "status", "DEGRADED", "version", version);
+        return Map.of("service", "order-service", "status", "OPERATIONAL", "version", version);
     }
 
     @GetMapping("/healthz")

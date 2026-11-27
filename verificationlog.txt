@@ -1,0 +1,139 @@
+CLOUD-NATIVE CI/CD LAB - VERIFICATION LOG
+Repository: https://github.com/Aakriti2312/cloud-native-cicd-lab
+==========================================
+
+1. MAVEN UNIT TESTS
+[INFO] Scanning for projects...
+[INFO] 
+[INFO] ---------------------< com.cloudlab:order-service >---------------------
+[INFO] Building order-service 1.0.0
+[INFO]   from pom.xml
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- clean:3.3.2:clean (default-clean) @ order-service ---
+[INFO] Deleting /Users/aakritidhawan/cloud-native-cicd-lab/target
+[INFO] 
+[INFO] --- resources:3.3.1:resources (default-resources) @ order-service ---
+[INFO] skip non existing resourceDirectory /Users/aakritidhawan/cloud-native-cicd-lab/src/main/resources
+[INFO] skip non existing resourceDirectory /Users/aakritidhawan/cloud-native-cicd-lab/src/main/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:compile (default-compile) @ order-service ---
+[INFO] Changes detected - recompiling the module! :source
+[INFO] Compiling 1 source file with javac [debug release 17] to target/classes
+[INFO] 
+[INFO] --- resources:3.3.1:testResources (default-testResources) @ order-service ---
+[INFO] skip non existing resourceDirectory /Users/aakritidhawan/cloud-native-cicd-lab/src/test/resources
+[INFO] 
+[INFO] --- compiler:3.11.0:testCompile (default-testCompile) @ order-service ---
+[INFO] Changes detected - recompiling the module! :dependency
+[INFO] Compiling 1 source file with javac [debug release 17] to target/test-classes
+[INFO] 
+[INFO] --- surefire:3.1.2:test (default-test) @ order-service ---
+[INFO] Using auto detected provider org.apache.maven.surefire.junitplatform.JUnitPlatformProvider
+[INFO] 
+[INFO] -------------------------------------------------------
+[INFO]  T E S T S
+[INFO] -------------------------------------------------------
+[INFO] Running com.cloudlab.app.OrderApplicationTest
+20:55:12.126 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.cloudlab.app.OrderApplicationTest]: OrderApplicationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+20:55:12.237 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.cloudlab.app.OrderApplication for test class com.cloudlab.app.OrderApplicationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.5)
+
+2026-11-27T20:55:12.918+05:30  INFO 38011 --- [           main] com.cloudlab.app.OrderApplicationTest    : Starting OrderApplicationTest using Java 17.0.21.1 with PID 38011 (started by aakritidhawan in /Users/aakritidhawan/cloud-native-cicd-lab)
+2026-11-27T20:55:12.921+05:30  INFO 38011 --- [           main] com.cloudlab.app.OrderApplicationTest    : No active profile set, falling back to 1 default profile: "default"
+2026-11-27T20:55:13.589+05:30  INFO 38011 --- [           main] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-11-27T20:55:13.590+05:30  INFO 38011 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-11-27T20:55:13.591+05:30  INFO 38011 --- [           main] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-11-27T20:55:13.605+05:30  INFO 38011 --- [           main] com.cloudlab.app.OrderApplicationTest    : Started OrderApplicationTest in 1.109 seconds (process running for 1.817)
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 2.193 s -- in com.cloudlab.app.OrderApplicationTest
+[INFO] 
+[INFO] Results:
+[INFO] 
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0
+[INFO] 
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  3.696 s
+[INFO] Finished at: 2026-11-27T20:55:14+05:30
+[INFO] ------------------------------------------------------------------------
+
+2. DOCKER IMAGE
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+order-service:1.0.0-local                                                                  2dbb1099bc68        403MB          109MB        
+
+3. NON-ROOT USER
+657fcab1f6c0179664f806dcc3caf5a7a53be39dd0188f3bd2fc2a1ff1af0e86
+appuser
+{"status":"OPERATIONAL","version":"1.0.0-local","service":"order-service"}verification-order
+
+4. KUBERNETES DEPLOYMENT
+Name:                   order-service
+Namespace:              default
+CreationTimestamp:      Fri, 27 Nov 2026 20:50:03 +0530
+Labels:                 app=order-service
+Annotations:            deployment.kubernetes.io/revision: 3
+Selector:               app=order-service
+Replicas:               2 desired | 2 updated | 2 total | 2 available | 0 unavailable
+StrategyType:           RollingUpdate
+MinReadySeconds:        0
+RollingUpdateStrategy:  0 max unavailable, 1 max surge
+Pod Template:
+  Labels:  app=order-service
+  Containers:
+   order-service:
+    Image:      order-service:1.0.0-local
+    Port:       8080/TCP
+    Host Port:  0/TCP
+    Limits:
+      cpu:     500m
+      memory:  384Mi
+    Requests:
+      cpu:      100m
+      memory:   192Mi
+    Liveness:   http-get http://:8080/healthz delay=15s timeout=1s period=10s #success=1 #failure=3
+    Readiness:  http-get http://:8080/healthz delay=5s timeout=1s period=5s #success=1 #failure=3
+    Environment:
+      APP_VERSION:  1.0.0-local
+    Mounts:         <none>
+  Volumes:          <none>
+  Node-Selectors:   <none>
+  Tolerations:      <none>
+Conditions:
+  Type           Status  Reason
+  ----           ------  ------
+  Available      True    MinimumReplicasAvailable
+  Progressing    True    NewReplicaSetAvailable
+OldReplicaSets:  order-service-7666f875ff (0/0 replicas created)
+NewReplicaSet:   order-service-55d8678cd (2/2 replicas created)
+Events:
+  Type    Reason             Age    From                   Message
+  ----    ------             ----   ----                   -------
+  Normal  ScalingReplicaSet  5m17s  deployment-controller  Scaled up replica set order-service-55d8678cd to 2
+  Normal  ScalingReplicaSet  3m28s  deployment-controller  Scaled up replica set order-service-7666f875ff to 1
+  Normal  ScalingReplicaSet  2m39s  deployment-controller  Scaled down replica set order-service-7666f875ff to 0 from 1
+
+5. KUBERNETES PODS
+NAME                            READY   STATUS    RESTARTS   AGE
+order-service-55d8678cd-mpvwf   1/1     Running   0          5m17s
+order-service-55d8678cd-pp7c4   1/1     Running   0          5m17s
+
+6. SERVICE STATUS
+{"status":"OPERATIONAL","version":"1.0.0-local","service":"order-service"}
+7. ROLLBACK HISTORY
+deployment.apps/order-service 
+REVISION  CHANGE-CAUSE
+2         <none>
+3         <none>
+
+
+8. FINAL ROLLOUT STATUS
+deployment "order-service" successfully rolled out

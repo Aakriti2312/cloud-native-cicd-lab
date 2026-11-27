@@ -1,0 +1,99 @@
+name: Cloud-Native CI/CD Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  unit-test:
+    name: "Stage 1: Compile & JUnit 5 Quality Gate"
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Execute Automated Unit Tests
+        run: mvn -B clean test
+
+  build-and-push:
+    name: "Stage 2: Build & Publish Immutable Image"
+    needs: unit-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      short_sha: ${{ steps.vars.outputs.short_sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute Short Git SHA Tag
+        id: vars
+        run: echo "short_sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Authenticate with GitHub Container Registry (GHCR)
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Multi-Stage Image
+        run: |
+          IMAGE_URI="${REGISTRY}/${IMAGE_NAME,,}:${{ steps.vars.outputs.short_sha }}"
+          docker build -t "${IMAGE_URI}" .
+          docker push "${IMAGE_URI}"
+
+  deploy-k3d:
+    name: "Stage 3: Rolling Deployment & Smoke Verification"
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Provision Ephemeral k3d Kubernetes Cluster
+        run: |
+          curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+          k3d cluster create cicd-lab -p "8081:30080@server:0" --wait
+
+      - name: Deploy Application & Verify Rollout Status
+        env:
+          SHORT_SHA: ${{ needs.build-and-push.outputs.short_sha }}
+        run: |
+          IMAGE_URI="ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]'):${SHORT_SHA}"
+
+          sed -e "s|IMAGE_PLACEHOLDER|${IMAGE_URI}|g" \
+              -e "s|VERSION_PLACEHOLDER|${SHORT_SHA}|g" k8s/deployment.yaml |
+              kubectl apply -f -
+
+          kubectl rollout status deployment/order-service --timeout=90s
+          kubectl get pods -l app=order-service -o wide
+
+      - name: Execute Post-Deployment HTTP Smoke Test
+        run: |
+          for i in {1..10}; do
+            RESPONSE=$(curl -s http://localhost:8081/api/v1/status || true)
+            if echo "${RESPONSE}" | grep -q "OPERATIONAL"; then
+              echo "Smoke Test Passed: ${RESPONSE}" && exit 0
+            fi
+            sleep 3
+          done
+
+          echo "Smoke Test Failed!" && exit 1
